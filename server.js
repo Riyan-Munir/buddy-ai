@@ -62,8 +62,8 @@ Rules:
 1. Answer ONLY DSA/OOP questions.
 2. If unrelated, respond exactly: "Sorry! I am only dedicated for DSA and OOP."
 3. Only return code & guidance for DSA/OOP.
-4. Must Wrap code inside $$ signs like: $$Code here$$.
-5. Don't add any extra symbol except bold, underline, italic symbols.
+4. Must Wrap code inside $$ signs like: $$Code here$$, for bold use **text**, for italic use *text*, for underline use __text__, for h1 size heading use ####heading####, for h2 size heading use ###heading###, for h3 size heading use ##heading##.
+5. Must not add any other symbol except upper mentioned symbols.
 The question is :`;
 
   try {

@@ -64,6 +64,7 @@ Rules:
 3. Only return code & guidance for DSA/OOP.
 4. Must Wrap code inside $$ signs like: $$Code here$$, for bold use **text**, for italic use *text*, for underline use __text__, for h1 size heading use ####heading####, for h2 size heading use ###heading###, for h3 size heading use ##heading##.
 5. Must not add any other symbol except upper mentioned symbols.
+6. Give response with proper line breaks so it'll easy to understand.
 The question is :`;
 
   try {

@@ -62,7 +62,8 @@ Rules:
 1. Answer ONLY DSA/OOP questions.
 2. If unrelated, respond exactly: "Sorry! I am only dedicated for DSA and OOP."
 3. Only return code & guidance for DSA/OOP.
-4. Wrap all code like: ''Code here''.
+4. Must Wrap code inside $$ signs like: $$Code here$$.
+5. Don't add any extra symbol except bold, underline, italic symbols.
 The question is :`;
 
   try {

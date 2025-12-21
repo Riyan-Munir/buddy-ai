@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
-const path = require('path');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
@@ -25,15 +24,10 @@ const modelName = 'gemini-2.5-flash';
 const geminiKeys = [
   process.env.GEMINI_API_KEY_1,
   process.env.GEMINI_API_KEY_2,
+  process.env.GEMINI_API_KEY_3
 ];
-let apiCallCount = 0;
-function getApiKey() {
-  const index = Math.floor(apiCallCount / 1000);
-  apiCallCount++;
-  return geminiKeys[index % geminiKeys.length];
-}
 
-// Verify Firebase token
+// Verify Firebase token middleware
 async function verifyFirebaseToken(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer '))
@@ -50,7 +44,38 @@ async function verifyFirebaseToken(req, res, next) {
   }
 }
 
-// AI assistant route
+// Helper: try generating AI response with retries
+async function generateAIResponseWithRetries(prompt) {
+  for (let i = 0; i < geminiKeys.length; i++) {
+    const apiKey = geminiKeys[i];
+    const ai = new GoogleGenAI({ apiKey });
+    try {
+      const result = await ai.models.generateContent({
+        model: modelName,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      });
+
+      let text = 'No response generated';
+      if (result?.candidates?.length) {
+        const candidate = result.candidates[0];
+        const content = candidate.content;
+
+        if (content?.parts && Array.isArray(content.parts)) {
+          text = content.parts.map(p => p.text || '').join('\n').trim();
+        } else if (content?.text) {
+          text = content.text.trim();
+        }
+      }
+
+      return text;
+    } catch (err) {
+      console.error(`API key ${i + 1} failed:`, err.message);
+      // try next key
+    }
+  }
+  throw new Error('All API keys failed to generate response');
+}
+
 // AI assistant route
 app.post('/ask', verifyFirebaseToken, async (req, res) => {
   const { question } = req.body;
@@ -65,36 +90,15 @@ Rules:
 4. Must Wrap code inside $$ signs like: $$Code here$$, for bold use **text**, for italic use *text*, for underline use __text__, for h1 size heading use ####heading####, for h2 size heading use ###heading###, for h3 size heading use ##heading##.
 5. Must not add any other symbol except upper mentioned symbols.
 6. Give response with proper line breaks so it'll easy to understand.
-The question is :`;
+The question is:
+${question}`;
 
   try {
-    const apiKey = getApiKey();
-    const ai = new GoogleGenAI({ apiKey });
-
-    const result = await ai.models.generateContent({
-      model: modelName,
-      contents: [{ role: 'user', parts: [{ text: prompt + '\n' + question }] }],
-    });
-
-    console.log('AI raw result:', JSON.stringify(result, null, 2)); // debug
-
-    // Robust parsing
-    let text = 'No response generated';
-    if (result?.candidates?.length) {
-      const candidate = result.candidates[0];
-      const content = candidate.content;
-
-      if (content?.parts && Array.isArray(content.parts)) {
-        text = content.parts.map(p => p.text || '').join('\n').trim();
-      } else if (content?.text) {
-        text = content.text.trim();
-      }
-    }
-
-    res.json({ response: text });
+    const responseText = await generateAIResponseWithRetries(prompt);
+    res.json({ response: responseText });
   } catch (err) {
-    console.error('AI generation error:', err);
-    res.status(500).json({ error: 'Failed to generate response' });
+    console.error('AI generation failed with all keys:', err.message);
+    res.status(500).json({ error: 'Failed to generate response with all API keys' });
   }
 });
 
